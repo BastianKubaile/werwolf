@@ -1,10 +1,10 @@
 const discord = require("discord.js");
-const program = require("commander");
-program.version("1.0.0")
+const commander = require("commander");
 const client = new discord.Client();
 
 const messages = require("./services/messages");
-const create_game = require("./services/create_game")
+const create_game = require("./services/create_game");
+const roleutils = require("./services/roleutils");
 var roles = require("./roles")
 const secrets = require("./secrets").secrets;
 
@@ -26,6 +26,9 @@ client.on("ready", () => {
 })
 
 client.on("message", msg => {
+    const program = new commander.Command();
+    program.version("1.0.0");
+
     let text = msg.content;
     let accept_re = /^werwolf.*/g;
     if(!accept_re.exec(text)){
@@ -35,14 +38,29 @@ client.on("message", msg => {
     let game_id = `${msg.guild.id}@${msg.channel.id}`;
     let game_present = global.games[game_id]? true: false; 
     let game = game_present? global.games[game_id] : undefined; 
-
+    
     program
-        .option("-c, --create-game", "create a new game in this Channel on this Server")
-        .option("-i, --info", "get some information");
+        .option("-c, --creategame", "create a new game in this Channel on this Server")
+        .option("-i, --info", "get some information")
+        .option("-p, --show-players", "show all the players in the game")
+        .option("-r, --show-roles", "show all the roles currently selected")
+        .option("-d, --deal-cards", "deals the cards to the players in the current game. The cards are sent via private message.")
+        .option("-u, --update-master", "updates the master via private message with the current information about the game.")
+        .option("--add-edition <name>", "adds the edition with the name")
+        .option("--remove-edition <name>", "removes the edition with the name")
+    program.command("add-roles <args>")
+        .description("Adds the roles, listed in a comma seperated List. ").action((args) => {
+            roleutils.addRole(msg, game, roles.lookup_table, args)
+        });
+    let split_args = text.split(" ");
+
+    split_args.splice(0, 1);
+    split_args = ["", ""].concat(split_args);
+    program.parse(split_args);
     
     if(program.info){
         messages.commands_info(msg);
-    }else if (prorgram.create_game){
+    }else if (program.creategame){
         if(game_present && !parsed.force  ){
             messages.game_present(msg);
             return;
@@ -52,7 +70,7 @@ client.on("message", msg => {
         messages.game_created(msg);
         messages.game_master(msg.author, msg.channel.name, msg.guild.name);
         return;
-    }else if (commands[1] === "show-players"){
+    }else if (program.showPlayers){
         if(!game_present){
             messages.no_game_present(msg);
             return
@@ -62,7 +80,7 @@ client.on("message", msg => {
             txt += player.name + "\n";
         }
         msg.reply(txt);
-    }else if (commands[1] === "show-roles"){
+    }else if (program.showRoles){
         if(!game_present){
             messages.no_game_present(msg);
             return;
@@ -72,7 +90,7 @@ client.on("message", msg => {
             text += role +  "\n"; 
         }
         msg.reply(text + "Mit einem Kommando(?) könnt ihr die Beschreibung zu einer Rolle erfahren.");
-    }else if(commands[1] === "deal-cards"){
+    }else if(program.dealCards){
         if(!game_present){
             messages.no_game_present(msg);
             return;
@@ -115,91 +133,80 @@ client.on("message", msg => {
 
         //Notify the game Master about all the roles
         messages.update_master(msg, game, true);
-    }else if (commands[1] === "update-master"){
+    }else if (program.updateMaster){
         if(!game_present){
             messages.no_game_present(msg);
             return;
         }
         messages.update_master(msg, game);
-    }else if (commands[1] === "add-edition"){
+    }else if (program.addEdition){
         if(!game_present){
             messages.no_game_present(msg);
             return;
         }
-        for(let i = 2; i < commands.length; i++){
-            let edition_name = commands[i];
-            let edition = roles[edition_name];
-            let added_roles = [];
-            if(edition === undefined){
-                messages.edition_not_found(msg, edition_name);
-                return;
-            }else{
-                for(let role of edition){
-                    let name = role.name;
-                    if(game.state.selected_roles.indexOf(name) < 0){
-                        // Role not already present
-                        game.state.selected_roles.push(name);
-                        added_roles.push(name);
-                    }
+        let edition_name = program.addEdition;
+        let edition = roles[edition_name];
+        let added_roles = [];
+        if(edition === undefined){
+            messages.edition_not_found(msg, edition_name);
+            return;
+        }else{
+            for(let role of edition){
+                let name = role.name;
+                if(game.state.selected_roles.indexOf(name) < 0){
+                    // Role not already present
+                    game.state.selected_roles.push(name);
+                    added_roles.push(name);
                 }
             }
-            if(added_roles.length === 0){
-                messages.no_roles_added(msg);
-            }else{
-                messages.added_roles(msg, added_roles);
-            }
         }
-    }else if(commands[1] === "remove-edition"){
+        if(added_roles.length === 0){
+            messages.no_roles_added(msg);
+        }else{
+            messages.added_roles(msg, added_roles);
+        }
+    }else if(program.removeEdition){
         if(!game_present){
             messages.no_game_present(msg);
             return;
         }
-        for(let i = 2; i < commands.length; i++){
-            let edition_name = commands[i];
-            let edition = roles[edition_name];
-            let removed_roles = [];
-            if(edition === undefined){
-                messages.edition_not_found(msg, edition_name);
-                return;
-            }else{
-                for(let role of edition){
-                    let name = role.name;
-                    let idx = game.state.selected_roles.indexOf(name);
-                    if(idx >= 0){
-                        // Role present
-                        game.state.selected_roles.splice(idx, 1);
-                        removed_roles.push(name);
-                    }
+        let edition_name = program.removeEdition;
+        let edition = roles[edition_name];
+        let removed_roles = [];
+        if(edition === undefined){
+            messages.edition_not_found(msg, edition_name);
+            return;
+        }else{
+            for(let role of edition){
+                let name = role.name;
+                let idx = game.state.selected_roles.indexOf(name);
+                if(idx >= 0){
+                    // Role present
+                    game.state.selected_roles.splice(idx, 1);
+                    removed_roles.push(name);
                 }
             }
-            if(removed_roles.length === 0){
-                messages.no_roles_added(msg);
-            }else{
-                messages.removed_roles(msg, removed_roles);
-            }
         }
-    }else if(commands[1] === "add-role"){
+        if(removed_roles.length === 0){
+            messages.no_roles_added(msg);
+        }else{
+            messages.removed_roles(msg, removed_roles);
+        }
+    }else if(program.addRole){
         let roles_added = [];
-        for(let i = 2; i < commands.length; i++){
-            let role = commands[i];
-            if(roles.lookup_table[role] === undefined){
-                messages.role_not_found(msg, role);
-            }else{
-                if(game.state.selected_roles.indexOf(role) < 0){
-                    //Role not already present
-                    game.state.selected_roles.push(role);
-                    roles_added.push(role);
-                }
+        let role = program.addRole;
+        if(roles.lookup_table[role] === undefined){
+            messages.role_not_found(msg, role);
+        }else{
+            if(game.state.selected_roles.indexOf(role) < 0){
+                //Role not already present
+                game.state.selected_roles.push(role);
+                roles_added.push(role);
             }
         }
         messages.added_roles(msg, roles_added)
     }else{
     }
 });
-
-
-const delete_player = (id) => {
-
-}
 
 client.login(secrets.token);
