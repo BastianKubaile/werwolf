@@ -1,11 +1,11 @@
 const program = require('commander');
+const args = ["", "", "-a", "Der", "-a", "Alte"]
 
-program.command("--add-role <arg1>")
-    .action((arg1) => {
-        console.log(arg1);
-    });
+const collect = (value, previous) => {
+    return previous.concat([value])
+}
 
-console.log(process.argv);
-process.argv[0] = "";
-process.argv[1] = "";
-program.parse(process.argv);
+program.option("-a, --add-role <name>", "adds the roles", collect, []);
+program.parse(args);
+
+console.log(program.addRole);

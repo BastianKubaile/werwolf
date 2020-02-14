@@ -44,15 +44,14 @@ client.on("message", msg => {
         .option("-c, --creategame", "create a new game in this Channel on this Server")
         .option("-i, --info", "get some information")
         .option("-p, --show-players", "show all the players in the game")
-        .option("-r, --show-roles", "show all the roles currently selected")
+        .option("-s, --show-roles", "show all the roles currently selected")
         .option("-d, --deal-cards", "deals the cards to the players in the current game. The cards are sent via private message.")
         .option("-u, --update-master", "updates the master via private message with the current information about the game.")
         .option("--add-edition <name>", "adds the edition with the name")
         .option("--remove-edition <name>", "removes the edition with the name")
-    program.command("add-roles <args>")
-        .description("Adds the roles, listed in a comma seperated List. ").action((args) => {
-            roleutils.addRole(msg, game, roles.lookup_table, args)
-        });
+        .option("-a, --add-role <name>", "adds the role with name. If you want to add multiple roles, you need to run the option multiple times i.e. '-a name1 -a name2 ...'. If the role has got whitespace you need to put the option flag before each word i.e. role = s1 s2 -> '-a s1 -a s2'. The bot will then concatinate these strings and check if such a role exists, so make sure you type the roles correctly otherwise bot won't add anything.", collect, [])
+        .option("-r, --remove-role <name>", "removes the role with the name. Has got the same particularities as --add-role.", collect, []);
+
     let split_args = text.split(" ");
 
     split_args.splice(0, 1);
@@ -194,20 +193,38 @@ client.on("message", msg => {
             messages.removed_roles(msg, removed_roles);
         }
     }else if(program.addRole){
+        if(typeof program.addRole === "string") program.addRole = [program.addRole]
         let roles_added = [];
-        let role = program.addRole;
-        if(roles.lookup_table[role] === undefined){
-            messages.role_not_found(msg, role);
-        }else{
-            if(game.state.selected_roles.indexOf(role) < 0){
-                //Role not already present
-                game.state.selected_roles.push(role);
-                roles_added.push(role);
+        let current_role = "";
+        for(let i = 0; i < program.addRole.length; i++){
+            current_role += program.addRole[i];
+            if(roles.lookup_table[current_role] === undefined){
+                //Maybe we need to  add more strings to get a valid role, so add a whitespace 
+                current_role += " "
+                continue;
+            }else{
+                if(game.state.selected_roles.indexOf(current_role) < 0){
+                    //Role not already present
+                    game.state.selected_roles.push(current_role);
+                    roles_added.push(current_role);
+                }
+                //Clear the current role, so the next iteration tries matching a new role
+                current_role = "";
             }
+        }
+        if(current_role.length > 0){
+            //Some role wasn't found 
+            messages.role_not_found(msg, current_role)
         }
         messages.added_roles(msg, roles_added)
     }else{
     }
 });
+
+const collect = (previous, value) => {
+    //This concats multiple arguments with the same flag for commander.js
+    //See https://github.com/tj/commander.js/
+    return value.concat([previous]);
+}
 
 client.login(secrets.token);

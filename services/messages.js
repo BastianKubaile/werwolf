@@ -72,7 +72,11 @@ module.exports.edition_not_found = (msg, wrong_name) => {
 module.exports.added_roles = (msg, added_roles) => {
     let txt = "Folgend Rollen wurden hinzugefügt: \n";
     txt = added_roles.reduce((acc, value) => acc + value + "\n", txt)
-    msg.reply(txt);
+    if(added_roles.length > 0){
+        msg.reply(txt);
+    }else{
+        msg.reply("Es wurden keine Rollen hinzugefügt.")
+    }
 }
 
 module.exports.no_roles_added = (msg) => {
