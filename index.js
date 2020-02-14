@@ -41,7 +41,7 @@ client.on("message", msg => {
     let game = game_present? global.games[game_id] : undefined; 
     
     program
-        .option("-c, --creategame", "create a new game in this Channel on this Server")
+        .option("-c, --create-game", "create a new game in this Channel on this Server")
         .option("-i, --info", "get some information")
         .option("-p, --show-players", "show all the players in the game")
         .option("-s, --show-roles", "show all the roles currently selected")
@@ -60,7 +60,7 @@ client.on("message", msg => {
     
     if(program.info){
         messages.commands_info(msg);
-    }else if (program.creategame){
+    }else if (program.createGame){
         if(game_present && !parsed.force  ){
             messages.game_present(msg);
             return;
@@ -192,8 +192,12 @@ client.on("message", msg => {
         }else{
             messages.removed_roles(msg, removed_roles);
         }
-    }else if(program.addRole){
-        if(typeof program.addRole === "string") program.addRole = [program.addRole]
+    }else if(program.addRole.length > 0){
+        if(!game_present){
+            messages.no_game_present(msg);
+            return;
+        }
+        if(typeof program.addRole === "string" && program.addRole !== undefined) program.addRole = [program.addRole]
         let roles_added = [];
         let current_role = "";
         for(let i = 0; i < program.addRole.length; i++){
@@ -204,7 +208,7 @@ client.on("message", msg => {
                 continue;
             }else{
                 if(game.state.selected_roles.indexOf(current_role) < 0){
-                    //Role not already present
+                    //Role not present
                     game.state.selected_roles.push(current_role);
                     roles_added.push(current_role);
                 }
@@ -217,6 +221,36 @@ client.on("message", msg => {
             messages.role_not_found(msg, current_role)
         }
         messages.added_roles(msg, roles_added)
+    }else if(program.removeRole.length > 0){
+        if(!game_present){
+            messages.no_game_present(msg);
+            return;
+        }
+        if(typeof program.removeRole === "string") program.removeRole = [program.removeRole]
+        let roles_removed = [];
+        let current_role = "";
+        for(let i = 0; i < program.removeRole.length; i++){
+            current_role += program.removeRole[i];
+            if(roles.lookup_table[current_role] === undefined){
+                //Maybe we need to  add more strings to get a valid role, so add a whitespace 
+                current_role += " "
+                continue;
+            }else{
+                const idx = game.state.selected_roles.indexOf(current_role);
+                if(idx >= 0){
+                    //Role present
+                    game.state.selected_roles.splice(idx, 1);
+                    roles_removed.push(current_role);
+                }
+                //Clear the current role, so the next iteration tries matching a new role
+                current_role = "";
+            }
+        }
+        if(current_role.length > 0){
+            //Some role wasn't found 
+            messages.role_not_found(msg, current_role)
+        }
+        messages.removed_roles(msg, roles_removed);
     }else{
     }
 });

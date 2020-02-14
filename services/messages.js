@@ -86,7 +86,11 @@ module.exports.no_roles_added = (msg) => {
 module.exports.removed_roles= (msg, removed_roles) => {
     let txt = "Folgend Rollen wurden gelöscht: \n";
     txt = removed_roles.reduce((acc, value) => acc + value + "\n", txt)
-    msg.reply(txt);
+    if(removed_roles.length > 0){
+        msg.reply(txt);
+    }else{
+        msg.reply("Es wurden keine Rollen gelöscht.")
+    }
 }
 
 module.exports.no_roles_removed = (msg) => {
