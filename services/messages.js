@@ -100,3 +100,16 @@ module.exports.no_roles_removed = (msg) => {
 module.exports.role_not_found = (msg, role) => {
     msg.reply(`Konnte nicht die Rolle ${role} finden.`)
 }
+
+module.exports.commands_explainations = {
+    createGame: "Erzeugt ein neues Spiel in diesem Channel auf diesem Server.",
+    info: "Information über diesen Bot.",
+    showPlayers: "Zeigt alle Spieler in diesem Spiel an",
+    showRoles: "Zeigt alle Rollen an die momentan in dem Spiel verwendet werden.",
+    dealCards: "Verteilt die Karten an alle Spieler in diesem Spiel. Die Karten werden via DM privat gesendet.",
+    updateMaster: "Updated den Game Master mit den aktuellen Informationen über das Spiel via DM.",
+    addEdition: "Fügt die Edition mit dem Name <name> hinzu.",
+    removeEdition: "Löscht die Edition mit dem Namen <name>.",
+    addRole: "Fügt die Rolle mit dem Namen <name> hinzu. Wenn in der Rollen Leerzeichen entahlten sind, dann muss die Option vor jedem leerzeichen-freiem String stehen: Sei name1 = s1 s2. Um dann name1 hinzuzufügen muss dann -a s1 -a s2 ausgeführt werden. Mehrere Rollen können auch durch mehrfache Optionen hinzugefügt werden. Falschgeschriebene Strings führen dazu, dass das ganze Kommando ab diesem Punkt nicht verarbeitet werden kann.",
+    removeRole: "Löscht die mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf."
+}

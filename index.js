@@ -40,17 +40,18 @@ client.on("message", msg => {
     let game_present = global.games[game_id]? true: false; 
     let game = game_present? global.games[game_id] : undefined; 
     
+    let explains = messages.commands_explainations;
     program
-        .option("-c, --create-game", "create a new game in this Channel on this Server")
-        .option("-i, --info", "get some information")
-        .option("-p, --show-players", "show all the players in the game")
-        .option("-s, --show-roles", "show all the roles currently selected")
-        .option("-d, --deal-cards", "deals the cards to the players in the current game. The cards are sent via private message.")
-        .option("-u, --update-master", "updates the master via private message with the current information about the game.")
-        .option("--add-edition <name>", "adds the edition with the name")
-        .option("--remove-edition <name>", "removes the edition with the name")
-        .option("-a, --add-role <name>", "adds the role with name. If you want to add multiple roles, you need to run the option multiple times i.e. '-a name1 -a name2 ...'. If the role has got whitespace you need to put the option flag before each word i.e. role = s1 s2 -> '-a s1 -a s2'. The bot will then concatinate these strings and check if such a role exists, so make sure you type the roles correctly otherwise bot won't add anything.", collect, [])
-        .option("-r, --remove-role <name>", "removes the role with the name. Has got the same particularities as --add-role.", collect, []);
+        .option("-c, --create-game", explains.createGame)
+        .option("-i, --info", explains.info)
+        .option("-p, --show-players", explains.showPlayers)
+        .option("-s, --show-roles", explains.showRoles)
+        .option("-d, --deal-cards", explains.dealCards)
+        .option("-u, --update-master", explains.updateMaster)
+        .option("--add-edition <name>", explains.addEdition)
+        .option("--remove-edition <name>", explains.removeEdition)
+        .option("-a, --add-role <name>", explains.addRole, collect, [])
+        .option("-r, --remove-role <name>", explains.removeRole, collect, []);
 
     let split_args = text.split(" ");
 
