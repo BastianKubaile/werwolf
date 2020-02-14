@@ -5,8 +5,9 @@ const client = new discord.Client();
 const messages = require("./services/messages");
 const create_game = require("./services/create_game");
 const roleutils = require("./services/roleutils");
-var roles = require("./roles")
-const secrets = require("./secrets").secrets;
+const roles = require("./roles");
+const secrets = require("./secrets");
+const config = require("./config");
 
 global.games = {};
 /*Schema 
