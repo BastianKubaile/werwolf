@@ -1,7 +1,7 @@
 var format = require("date-format");
 var roles = require("../roles")
 
-module.exports = (msg) => {
+module.exports.create_game = (msg) => {
     let guild_id = msg.guild.id;
     let channel_id = msg.channel.id;
     let selected_roles = [];
@@ -11,7 +11,7 @@ module.exports = (msg) => {
     }
     let temp = {
         game_master: userToPlayer(msg.author),
-        players: membersToPlayer(msg),
+        players: membersToPlayer(msg.channel.members),
         state: {cards_dealed: false, selected_roles},
         settings: {
             //Default settings
@@ -35,8 +35,7 @@ const userToPlayer = (user) =>{
     }
 } 
 
-const membersToPlayer = (msg) => {
-    let member_arr = Array.from(msg.channel.members);
+const membersToPlayer = (member_arr) => {
     let result = [];
     for (let temp of member_arr){
         let id = temp[0];
@@ -50,3 +49,5 @@ const membersToPlayer = (msg) => {
     }
     return result;
 }
+
+module.exports.members_to_players = membersToPlayer;

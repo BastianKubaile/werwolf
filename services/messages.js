@@ -1,32 +1,10 @@
-module.exports.commands_info = (msg) => {
-    msg.reply(`
-    **Werwolf Bot**
-    Mit diesem Bot könnt ihr Werwolf spielen. Folgende Kommandos sind möglich:
+module.exports.info = (msg, program, command) => {
+    let txt = `Verwendung: ${command} [options]\n \n Options: \n`;
+    for(let option of program.options){
+        txt += `\t ${option.flags} \t ${option.description} \n`
+    }
 
-    > werwolf create-game 
-    Erzeugt ein Neues Werwolf Spiel, bei standardmäßig alle Spieler aus dem Channel teilnehmen. 
-    
-    > werwolf deal-cards
-    Teilt zufällig Karten an alle Spieler per Direct Message aus. Die Karten hängen von den ausgewählten Rollen ab.
-    
-    > werwolf show-roles
-    Zeigt alle Rollen, die momentan ausgewählt sind.
-    
-    > werwolf add_edition edition_name
-    Fügt die Edition edition_name hinzu. Verfügbare Editionen sind Grundspiel, Neumond, "Die Gemeinde" (Argumente mit Leerzeichen müssen in Anführungszeichen übergeben werden), Charaktere.
-
-    > werwolf remove_addition edition_name
-    Löscht die entsprechende Edition.
-
-    > werwolf show-players
-    Zeigt eine Liste mit allen Spielern an.
-    
-    > werwolf -r discord_name
-    Löscht den Spieler mit dem Name discord_name. Mehreren mit Leerzeichen getrennte Name sind möglich.
-
-    > werwolf -a discord_name
-    Fügt den Spieler mit discord_name hinzu, nur möglich wenn der Spieler auch in dem channel ist.
-    `);
+    msg.reply(txt);
 }
 
 module.exports.game_present = (msg) => {
@@ -70,31 +48,38 @@ module.exports.edition_not_found = (msg, wrong_name) => {
 }
 
 module.exports.added_roles = (msg, added_roles) => {
-    let txt = "Folgend Rollen wurden hinzugefügt: \n";
-    txt = added_roles.reduce((acc, value) => acc + value + "\n", txt)
-    if(added_roles.length > 0){
-        msg.reply(txt);
-    }else{
-        msg.reply("Es wurden keine Rollen hinzugefügt.")
-    }
+    msg.reply(_something_changed("Rollen", added_roles, true));
 }
 
 module.exports.no_roles_added = (msg) => {
-    msg.reply("Es wurden keine Rollen hinzugefügt.")
+    msg.reply(this._nothing_changed("Rollen", true));
 }
 
 module.exports.removed_roles= (msg, removed_roles) => {
-    let txt = "Folgend Rollen wurden gelöscht: \n";
-    txt = removed_roles.reduce((acc, value) => acc + value + "\n", txt)
-    if(removed_roles.length > 0){
-        msg.reply(txt);
-    }else{
-        msg.reply("Es wurden keine Rollen gelöscht.")
-    }
+    msg.reply(_something_changed("Rollen", removed_roles, false));
 }
 
 module.exports.no_roles_removed = (msg) => {
-    msg.reply("Es wurden keine Rollen gelöscht.");
+    msg.reply(_nothing_changed("Rollen", false));
+}
+
+module.exports.removed_players = (msg, removed_players) => {
+    msg.reply(_something_changed("Spieler", removed_players, false));
+}
+
+module.exports.added_players = (msg, added_players) => {
+    msg.reply(_something_changed("Spiler", added_players, true));
+}
+
+const _something_changed = (name, things_that_changed, added) => {
+    if(things_that_changed.length == 0) return _nothing_changed(name, added);
+    let txt = `Folgende ${name} wurden ${added? "hinzugefügt": "gelöscht"}: \n`;
+    txt = things_that_changed.reduce((acc, value) => acc + value + "\n", txt);
+    return txt;
+}
+
+const _nothing_changed = (name, wanted_to_add) =>{
+    return `Es wurden keine ${name} ${wanted_to_add? "hinzugefügt": "gelöscht"}`;
 }
 
 module.exports.role_not_found = (msg, role) => {
@@ -111,5 +96,7 @@ module.exports.commands_explainations = {
     addEdition: "Fügt die Edition mit dem Name <name> hinzu.",
     removeEdition: "Löscht die Edition mit dem Namen <name>.",
     addRole: "Fügt die Rolle mit dem Namen <name> hinzu. Wenn in der Rollen Leerzeichen entahlten sind, dann muss die Option vor jedem leerzeichen-freiem String stehen: Sei name1 = s1 s2. Um dann name1 hinzuzufügen muss dann -a s1 -a s2 ausgeführt werden. Mehrere Rollen können auch durch mehrfache Optionen hinzugefügt werden. Falschgeschriebene Strings führen dazu, dass das ganze Kommando ab diesem Punkt nicht verarbeitet werden kann.",
-    removeRole: "Löscht die mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf."
+    removeRole: "Löscht die mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
+    removePlayer: "Löscht den Spieler mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
+    addPlayer: "Fügt den Spierl mit dem Namen <name> hinzu. Die selben Besonderheiten wie bei addRole treten hier auf."
 }

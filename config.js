@@ -1,3 +1,3 @@
 module.exports = {
-    "command": "werwolf"
+    command: "werwolf"
 }

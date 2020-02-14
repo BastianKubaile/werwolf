@@ -3,7 +3,7 @@ const commander = require("commander");
 const client = new discord.Client();
 
 const messages = require("./services/messages");
-const create_game = require("./services/create_game");
+const api_utils = require("./services/api_utils");
 const roleutils = require("./services/roleutils");
 const roles = require("./roles");
 const secrets = require("./secrets");
@@ -31,7 +31,7 @@ client.on("message", msg => {
     program.version("1.0.0");
 
     let text = msg.content;
-    let accept_re = /^werwolf.*/g;
+    let accept_re = new RegExp("^" + config.command + ".*", "g");
     if(!accept_re.exec(text)){
         return;
     }
@@ -51,7 +51,9 @@ client.on("message", msg => {
         .option("--add-edition <name>", explains.addEdition)
         .option("--remove-edition <name>", explains.removeEdition)
         .option("-a, --add-role <name>", explains.addRole, collect, [])
-        .option("-r, --remove-role <name>", explains.removeRole, collect, []);
+        .option("-r, --remove-role <name>", explains.removeRole, collect, [])
+        .option("-k, --remove-player <name>", explains.removePlayer, collect, [])
+        .option("-l, --add-player <name>", explains.addPlayer, collect, []);
 
     let split_args = text.split(" ");
 
@@ -60,13 +62,13 @@ client.on("message", msg => {
     program.parse(split_args);
     
     if(program.info){
-        messages.commands_info(msg);
+        messages.info(msg, program, config.command)
     }else if (program.createGame){
         if(game_present && !parsed.force  ){
             messages.game_present(msg);
             return;
         }
-        var [[id], created_game] = create_game(msg);
+        var [[id], created_game] = api_utils.create_game(msg);
         global.games[id] = created_game;
         messages.game_created(msg);
         messages.game_master(msg.author, msg.channel.name, msg.guild.name);
@@ -252,6 +254,38 @@ client.on("message", msg => {
             messages.role_not_found(msg, current_role)
         }
         messages.removed_roles(msg, roles_removed);
+    }else if(program.removePlayer.length > 0){
+        if(!game_present){
+            messages.no_game_present(msg);
+            return;
+        }
+        let removed_players = [];
+        OUTER_LOOP: for(let player of program.removePlayer){
+            for(let i = 0; i < game.players.length; i++){
+                let present_player = game.players[i];
+                if(present_player.name === player){
+                    game.players.splice(i, 1);
+                    removed_players.push(player);
+                }
+            }
+        }
+        messages.removed_players(msg, removed_players);
+    }else if(program.addPlayer.length > 0){
+        if(!game_present){
+            messages.no_game_present(msg);
+            return;
+        }
+        let players_in_channel = api_utils.members_to_players(msg.channel.members);
+        let players_added = [];
+        for( let to_add of program.addPlayer){
+            for(let player of players_in_channel){
+                if(to_add === player.name){
+                    game.players.push(player);
+                    players_added(player.name);
+                }
+            }
+        }
+        messages.added_players(msg,players_added)
     }else{
     }
 });
