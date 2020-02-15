@@ -8,7 +8,7 @@ module.exports.info = (msg, program, command) => {
 }
 
 module.exports.game_present = (msg) => {
-    msg.reply("Es gibt bereits ein Spiel in diesem Channel & Discord Server. Mit werwolf create-game -f kann ein neues Spiel erzeugt werden, dass das bekannte überschreibt.");
+    msg.reply("Es gibt bereits ein Spiel in diesem Channel & Discord Server. Mit werwolf --create-game force kann ein neues Spiel erzeugt werden, dass das bekannte überschreibt.");
 }
 
 module.exports.game_created = (msg) => {
@@ -98,5 +98,6 @@ module.exports.commands_explainations = {
     addRole: "Fügt die Rolle mit dem Namen <name> hinzu. Wenn in der Rollen Leerzeichen entahlten sind, dann muss die Option vor jedem leerzeichen-freiem String stehen: Sei name1 = s1 s2. Um dann name1 hinzuzufügen muss dann -a s1 -a s2 ausgeführt werden. Mehrere Rollen können auch durch mehrfache Optionen hinzugefügt werden. Falschgeschriebene Strings führen dazu, dass das ganze Kommando ab diesem Punkt nicht verarbeitet werden kann.",
     removeRole: "Löscht die mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
     removePlayer: "Löscht den Spieler mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
-    addPlayer: "Fügt den Spierl mit dem Namen <name> hinzu. Die selben Besonderheiten wie bei addRole treten hier auf."
+    addPlayer: "Fügt den Spieler mit dem Namen <name> hinzu. Die selben Besonderheiten wie bei addRole treten hier auf.",
+    explainRole: "Erklärt die Rolle mit den Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf."
 }

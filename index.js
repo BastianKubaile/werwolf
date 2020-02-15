@@ -53,7 +53,8 @@ client.on("message", async msg => {
         .option("-a, --add-role <name>", explains.addRole, collect, [])
         .option("-r, --remove-role <name>", explains.removeRole, collect, [])
         .option("-k, --remove-player <name>", explains.removePlayer, collect, [])
-        .option("-l, --add-player <name>", explains.addPlayer, collect, []);
+        .option("-l, --add-player <name>", explains.addPlayer, collect, [])
+        .option("-e, --explain-role <name>", explains.explainRole, collect, []);
 
     let split_args = text.split(" ");
 
@@ -64,8 +65,7 @@ client.on("message", async msg => {
     if(program.info){
         messages.info(msg, program, config.command)
     }else if (program.createGame){
-        //TODO: Give the ability to force creating a game, overwriting the old one
-        if(game_present){
+        if(game_present && ! (program.args.indexOf("force") >= 0)){
             messages.game_present(msg);
             return;
         }
@@ -120,7 +120,10 @@ client.on("message", async msg => {
             }else{
                 //Give the player a  role
                 let selected_roles = game.state.selected_roles;
-                player.role = selected_roles[Math.floor(Math.random() * selected_roles.length)];
+                do{
+                    player.role = selected_roles[Math.floor(Math.random() * selected_roles.length)];
+                }while(game.state.used_roles.indexOf(player.role) >= 0)
+                game.state.used_roles.push(player.role);
                 private_msg = `Du bist ${player.role}. ${roles.lookup_table[player.role]}`;
             }
             player_msg.send(private_msg).catch(async (err) => {
@@ -135,7 +138,7 @@ client.on("message", async msg => {
                 }
             });
         }
-
+        api_utils.save_game(global.storage, game_id, game);
         //Notify the game Master about all the roles
         messages.update_master(msg, game, true);
     }else if (program.updateMaster){
@@ -196,23 +199,14 @@ client.on("message", async msg => {
             messages.no_game_present(msg);
             return;
         }
-        if(typeof program.addRole === "string" && program.addRole !== undefined) program.addRole = [program.addRole]
-        let roles_added = [];
-        let current_role = "";
-        for(let i = 0; i < program.addRole.length; i++){
-            current_role += program.addRole[i];
-            if(roles.lookup_table[current_role] === undefined){
-                //Maybe we need to  add more strings to get a valid role, so add a whitespace 
-                current_role += " "
-                continue;
-            }else{
-                if(game.state.selected_roles.indexOf(current_role) < 0){
-                    //Role not present
-                    game.state.selected_roles.push(current_role);
-                    roles_added.push(current_role);
-                }
-                //Clear the current role, so the next iteration tries matching a new role
-                current_role = "";
+        if(typeof program.addRole === "string" && program.addRole !== undefined){
+            program.addRole = [program.addRole];
+        }
+        let [added_roles, current_role] = iterate_role_args(program.addRole, roles.lookup_table);
+        for(let role of added_roles){
+            if(game.state.selected_roles.indexOf(role) < 0){
+                //Role not present
+                game.state.selected_roles.push(role);
             }
         }
         if(current_role.length > 0){
@@ -226,24 +220,14 @@ client.on("message", async msg => {
             messages.no_game_present(msg);
             return;
         }
-        if(typeof program.removeRole === "string") program.removeRole = [program.removeRole]
-        let roles_removed = [];
-        let current_role = "";
-        for(let i = 0; i < program.removeRole.length; i++){
-            current_role += program.removeRole[i];
-            //Maybe we need to  add more strings to get a valid role, so add a whitespace 
-            if(roles.lookup_table[current_role] === undefined){
-                current_role += " "
-                continue;
-            }else{
-                const idx = game.state.selected_roles.indexOf(current_role);
-                if(idx >= 0){
-                    //Role present
-                    game.state.selected_roles.splice(idx, 1);
-                    roles_removed.push(current_role);
-                }
-                //Clear the current role, so the next iteration tries matching a new role
-                current_role = "";
+        if(typeof program.removeRole === "string"){
+             program.removeRole = [program.removeRole];
+        }
+        let [removed_roles, current_role] = iterate_role_args(program.removeRole, roles.lookup_table);
+        for(let role of removed_roles){
+            const idx = game.state.selected_roles.indexOf(role);
+            if(idx >= 0){
+                game.state.selected_roles.splice(idx, 1);
             }
         }
         if(current_role.length > 0){
@@ -251,7 +235,7 @@ client.on("message", async msg => {
             messages.role_not_found(msg, current_role)
         }
         api_utils.save_game(global.storage, game_id, game);
-        messages.removed_roles(msg, roles_removed);
+        messages.removed_roles(msg, removed_roles);
     }else if(program.removePlayer.length > 0){
         if(!game_present){
             messages.no_game_present(msg);
@@ -286,7 +270,15 @@ client.on("message", async msg => {
         }
         api_utils.save_game(global.storage, game_id, game);
         messages.added_players(msg,players_added)
-    }else{
+    }else if(program.explainRole.length > 0){
+        let [requested_roles, not_matched] = iterate_role_args(program.explainRole, roles.lookup_table);
+        let txt = "";
+        for(let role of requested_roles){
+            txt += `${role}: \t ${roles.lookup_table[role]} \n`;
+        }
+        msg.reply(txt);
+    }
+    else{
     }
 });
 
@@ -294,6 +286,24 @@ const collect = (previous, value) => {
     //This concats multiple arguments with the same flag for commander.js
     //See https://github.com/tj/commander.js/
     return value.concat([previous]);
+}
+
+const iterate_role_args = (args, lookup_table) => {
+    //Iterates the args, where multiple strings may need to be concatenated to give a valid role name.Calls callback function role_found when such a valid name is found
+    //Returns: (current_role [wasn't matched with anything], roles_found)
+    let current_role = "";
+    let roles_found = [];
+    for(let i = 0; i < args.length; i++){
+        current_role += args[i];
+        if(lookup_table[current_role] === undefined){
+            current_role += " ";
+            continue;
+        }else{
+            roles_found.push(current_role);
+            current_role = "";
+        }
+    }
+    return [roles_found, current_role];
 }
 
 client.login(secrets.token);
