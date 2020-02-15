@@ -8,25 +8,25 @@ const roleutils = require("./services/roleutils");
 const roles = require("./roles");
 const secrets = require("./secrets");
 const config = require("./config");
+const mongoose = require("mongoose");
 
-global.games = {};
-/*Schema 
-{
-    id: {
-        game_master: {id: String, status: String, name:String},
-        state: {cards_dealed: Boolean, selected_roles: [String]},
-        settings: {villager: Number, direwolf: Number, roles: Number }
-        players: [{id: String, status: String, role: String, name: String}],
-        date: {type: Date},
-    }
+require("./services/mongodb/model");
+
+const mongodb = config.mongodb !== undefined;
+
+if(mongodb){
+    mongoose.Promise = global.Promise;
+    mongoose.connect(config.mongodb.URI, {useNewUrlParser: true, useUnifiedTopology: true});
+    global.storage = mongoose.model("games");
+}else{
+    global.storage = {};
 }
-*/
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}`);
 })
 
-client.on("message", msg => {
+client.on("message", async msg => {
     const program = new commander.Command();
     program.version("1.0.0");
 
@@ -36,9 +36,9 @@ client.on("message", msg => {
         return;
     }
     
-    let game_id = `${msg.guild.id}@${msg.channel.id}`;
-    let game_present = global.games[game_id]? true: false; 
-    let game = game_present? global.games[game_id] : undefined; 
+    let game_id = api_utils.get_game_id(msg);
+    let game = await api_utils.get_game(global.storage, game_id);
+    let game_present = game !== undefined? true: false; 
     
     let explains = messages.commands_explainations;
     program
@@ -64,12 +64,13 @@ client.on("message", msg => {
     if(program.info){
         messages.info(msg, program, config.command)
     }else if (program.createGame){
-        if(game_present && !parsed.force  ){
+        //TODO: Give the ability to force creating a game, overwriting the old one
+        if(game_present){
             messages.game_present(msg);
             return;
         }
         var [[id], created_game] = api_utils.create_game(msg);
-        global.games[id] = created_game;
+        api_utils.save_game(global.storage, id, created_game);
         messages.game_created(msg);
         messages.game_master(msg.author, msg.channel.name, msg.guild.name);
         return;
@@ -122,13 +123,14 @@ client.on("message", msg => {
                 player.role = selected_roles[Math.floor(Math.random() * selected_roles.length)];
                 private_msg = `Du bist ${player.role}. ${roles.lookup_table[player.role]}`;
             }
-            player_msg.send(private_msg).catch((err) => {
+            player_msg.send(private_msg).catch(async (err) => {
                 console.log(err);
                 if(err.message === "Cannot send messages to this user"){
-                    //Delete the player, probably a bot
-                    let game_id = `${msg.guild.id}@${msg.channel.id}`;
-                    let game = global.games[game_id];
+                    //Delete the player, probably a bot, since this is
+                    let game_id = api_utils.get_game_id(msg);
+                    let game = await api_utils.get_game(global.storage, game_id);
                     game.players = game.players.filter(curr_player => curr_player.id !== player.id);
+                    api_utils.save_game(global.storage, game_id, game);
                     messages.cant_send_message(msg, player.name);
                 }
             });
@@ -163,11 +165,8 @@ client.on("message", msg => {
                 }
             }
         }
-        if(added_roles.length === 0){
-            messages.no_roles_added(msg);
-        }else{
-            messages.added_roles(msg, added_roles);
-        }
+        api_utils.save_game(global.storage, game_id, game);
+        messages.added_roles(msg, added_roles);
     }else if(program.removeEdition){
         if(!game_present){
             messages.no_game_present(msg);
@@ -190,11 +189,8 @@ client.on("message", msg => {
                 }
             }
         }
-        if(removed_roles.length === 0){
-            messages.no_roles_added(msg);
-        }else{
-            messages.removed_roles(msg, removed_roles);
-        }
+        api_utils.save_game(global.storage, game_id, game);
+        messages.removed_roles(msg, removed_roles);
     }else if(program.addRole.length > 0){
         if(!game_present){
             messages.no_game_present(msg);
@@ -223,6 +219,7 @@ client.on("message", msg => {
             //Some role wasn't found 
             messages.role_not_found(msg, current_role)
         }
+        api_utils.save_game(global.storage, game_id, game);
         messages.added_roles(msg, roles_added)
     }else if(program.removeRole.length > 0){
         if(!game_present){
@@ -234,8 +231,8 @@ client.on("message", msg => {
         let current_role = "";
         for(let i = 0; i < program.removeRole.length; i++){
             current_role += program.removeRole[i];
+            //Maybe we need to  add more strings to get a valid role, so add a whitespace 
             if(roles.lookup_table[current_role] === undefined){
-                //Maybe we need to  add more strings to get a valid role, so add a whitespace 
                 current_role += " "
                 continue;
             }else{
@@ -253,6 +250,7 @@ client.on("message", msg => {
             //Some role wasn't found 
             messages.role_not_found(msg, current_role)
         }
+        api_utils.save_game(global.storage, game_id, game);
         messages.removed_roles(msg, roles_removed);
     }else if(program.removePlayer.length > 0){
         if(!game_present){
@@ -269,6 +267,7 @@ client.on("message", msg => {
                 }
             }
         }
+        api_utils.save_game(global.storage, game_id, game);
         messages.removed_players(msg, removed_players);
     }else if(program.addPlayer.length > 0){
         if(!game_present){
@@ -285,6 +284,7 @@ client.on("message", msg => {
                 }
             }
         }
+        api_utils.save_game(global.storage, game_id, game);
         messages.added_players(msg,players_added)
     }else{
     }

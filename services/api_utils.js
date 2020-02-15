@@ -1,9 +1,8 @@
 var format = require("date-format");
 var roles = require("../roles")
+const config = require("../config");
 
 module.exports.create_game = (msg) => {
-    let guild_id = msg.guild.id;
-    let channel_id = msg.channel.id;
     let selected_roles = [];
     //Select the "Grundspiel" as default
     for(let role of roles.Grundspiel){
@@ -22,8 +21,7 @@ module.exports.create_game = (msg) => {
         },
         date: format(new Date())
     }
-    let idx = guild_id + "@" + channel_id
-    return [[idx], temp]
+    return [[this.get_game_id(msg)], temp]
 }
 
 const userToPlayer = (user) =>{
@@ -51,3 +49,35 @@ const membersToPlayer = (member_arr) => {
 }
 
 module.exports.members_to_players = membersToPlayer;
+
+module.exports.get_game_id = (msg) => {
+    return `${msg.guild.id}@${msg.channel.id}`
+}
+
+module.exports.get_game = async (storage, game_id) => {
+    if(config.mongodb){
+        let game = await storage.findOne({_id: game_id})
+        .then()
+        .catch((err) => {
+            console.log(err);
+        });
+        game = game === null? undefined: game.toObject();//The rest of the code depends on game being undefined when it's not present
+        return game;
+    }else{
+        return storage[game_id]
+    }
+}
+
+module.exports.save_game = async(storage, id, game) => {
+    if(config.mongodb){
+        game._id = id;
+        let doc = await storage.findOne({_id: id});
+        if(doc !== null){
+            //Game already exists, so delete it
+            doc.remove();
+        }
+        storage.create(game);
+    }else{
+        storage[id] = game;
+    }
+}
