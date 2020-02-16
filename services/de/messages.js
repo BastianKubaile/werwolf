@@ -1,3 +1,5 @@
+const config = require("../../config");
+
 module.exports.info = (msg, program, command) => {
     let txt = `Verwendung: ${command} [options]\n \n Options: \n`;
     for(let option of program.options){
@@ -8,19 +10,19 @@ module.exports.info = (msg, program, command) => {
 }
 
 module.exports.game_present = (msg) => {
-    msg.reply("Es gibt bereits ein Spiel in diesem Channel & Discord Server. Mit werwolf --create-game force kann ein neues Spiel erzeugt werden, dass das bekannte überschreibt.");
+    msg.reply(`Es gibt bereits ein Spiel in diesem Channel & Discord Server. Mit ${config.command} --create-game force kann ein neues Spiel erzeugt werden, dass das bekannte überschreibt.`);
 }
 
 module.exports.game_created = (msg) => {
-    msg.reply(`Ein neues Spiel wurde erzeugt. Nun können Spieler hinzugefügt/ entfernt werden und die Karten ausgewählt werden mit denen gespielt werden sollen. Mit werwolf info kann eine Liste aller möglichen Kommandos einsehen.`);
+    msg.reply(`Ein neues Spiel wurde erzeugt. Nun können Spieler hinzugefügt/ entfernt werden und die Karten ausgewählt werden mit denen gespielt werden sollen. Mit ${config.command} info kann eine Liste aller möglichen Kommandos einsehen.`);
 }
 
 module.exports.game_master = (msg, channel_name, guild_name) => {
-    msg.send(`Du bist der Game Master des Spiels im Channel ${channel_name} vom Server ${guild_name}. Nur du kannst werwolf deal-cards ausführen und damit das Spiel beginnen. Eine Spielleitung kannst du hier finden: https://de.wikipedia.org/wiki/Die_Werw%C3%B6lfe_von_D%C3%BCsterwald#Spielablauf`);
+    msg.send(`Du bist der Game Master des Spiels im Channel ${channel_name} vom Server ${guild_name}. Nur du kannst ${config.command} deal-cards ausführen und damit das Spiel beginnen. Eine Spielleitung kannst du hier finden: https://de.wikipedia.org/wiki/Die_Werw%C3%B6lfe_von_D%C3%BCsterwald#Spielablauf`);
 }
 
 module.exports.no_game_present = (msg) => {
-    msg.reply("In diesem Channel & Server ist kein Spiel. Mit werwolf create-game kannst du ein Spiel erzeugen.")
+    msg.reply(`In diesem Channel & Server ist kein Spiel. Mit ${config.command} create-game kannst du ein Spiel erzeugen.`)
 }
 
 module.exports.chances_dont_add_up = (msg) => {
@@ -38,13 +40,13 @@ module.exports.update_master = (msg, game, explain_player_changes) => {
         txt += `${player.name}: ${player.role} \n`;
     }
     if(explain_player_changes){
-        txt += `Es können Spieler noch entfernt werden, wenn diesen keine Nachricht gesendet werden kann. Geschieht dies, wird das in ${msg.channel.name} mitgeteilt. Mit werwolf update-master kannst du jederzeit eine private Liste mit allen Rollen erhalten.`
+        txt += `Es können Spieler noch entfernt werden, wenn diesen keine Nachricht gesendet werden kann. Geschieht dies, wird das in ${msg.channel.name} mitgeteilt. Mit ${config.command} update-master kannst du jederzeit eine private Liste mit allen Rollen erhalten.`
     }
     msg.client.users.get(game.game_master.id).send(txt);
 }
 
 module.exports.edition_not_found = (msg, wrong_name) => {
-    msg.reply(`Edition ${wrong_name} konnte nicht gefunden werden. Verfügbare Editionen sind Grundspiel, Neumond, "Die Gemeinde" (Argumente mit Leerzeichen müssen in Anführungszeichen übergeben werden), Charaktere.`)
+    msg.reply(`Edition ${wrong_name} konnte nicht gefunden werden. Verfügbare Editionen sind Grundspiel, Neumond, Die Gemeinde(TODO: Make add edition accept multiple words) , Charaktere.`)
 }
 
 module.exports.added_roles = (msg, added_roles) => {
@@ -94,11 +96,27 @@ module.exports.inform_player = (role, lookup_table) =>{
     if(role === "Villager"){
         return "Du bist Bürger."
     }else if(role === "Direwolf"){
-        return "Du bist Werwolf.";
+        return "Du bist ${config.command}.";
     }else{
-        return `Du bist${role}. \n ${lookup_table[role]}`;
+        return `Du bist ${role}. \n ${lookup_table[role]}`;
     }
 } 
+
+module.exports.show_roles = (msg, selected_roles) => {
+    let text = "Folgende Rollen sind momentan ausgewählt: \n"
+    for(let role of selected_roles){
+        text += role +  "\n"; 
+    }
+    msg.reply(text + "Mit einem --explain-role <name> könnt ihr die Beschreibung zu einer Rolle erfahren.");
+}
+
+module.exports.show_players = (msg, master, players) => {
+    let txt = `Der Spielleiter ist: \n ${master.name} \n Folgende Spieler sind im Spiel momentan:\n`;
+    for(let player of players){
+        txt += player.name + "\n";
+    }
+    msg.reply(txt);
+}
 
 module.exports.commands_explainations = {
     createGame: "Erzeugt ein neues Spiel in diesem Channel auf diesem Server.",
@@ -110,7 +128,7 @@ module.exports.commands_explainations = {
     addEdition: "Fügt die Edition mit dem Name <name> hinzu.",
     removeEdition: "Löscht die Edition mit dem Namen <name>.",
     addRole: "Fügt die Rolle mit dem Namen <name> hinzu. Wenn in der Rollen Leerzeichen entahlten sind, dann muss die Option vor jedem leerzeichen-freiem String stehen: Sei name1 = s1 s2. Um dann name1 hinzuzufügen muss dann -a s1 -a s2 ausgeführt werden. Mehrere Rollen können auch durch mehrfache Optionen hinzugefügt werden. Falschgeschriebene Strings führen dazu, dass das ganze Kommando ab diesem Punkt nicht verarbeitet werden kann.",
-    removeRole: "Löscht die mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
+    removeRole: "Löscht die Rolle mit dem Namen <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
     removePlayer: "Löscht den Spieler mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
     addPlayer: "Fügt den Spieler mit dem Namen <name> hinzu. Die selben Besonderheiten wie bei addRole treten hier auf.",
     explainRole: "Erklärt die Rolle mit den Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
