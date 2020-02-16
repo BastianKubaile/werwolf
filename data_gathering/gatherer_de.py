@@ -1,8 +1,8 @@
 import re
 import json
 
-f = open("./roles.txt", "r", encoding="utf-8")
-w = open("../roles.js", "w", encoding="utf-8")
+f = open("./roles_de.txt", "r", encoding="utf-8")
+w = open("../services/de/roles.js", "w", encoding="utf-8")
 
 roles = {}
 editions = ["Grundspiel", "Neumond", "Die Gemeinde", "Charaktere"]

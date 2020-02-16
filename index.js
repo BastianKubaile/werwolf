@@ -5,8 +5,7 @@ const client = new discord.Client();
 const config = require("./config");
 const messages = require(`./services/${config.language}/messages.js`);
 const api_utils = require("./services/api_utils");
-const roleutils = require("./services/roleutils");
-const roles = require("./roles");
+const roles = require(`./services/${config.language}/roles.js`);
 const secrets = require("./secrets");
 const mongoose = require("mongoose");
 

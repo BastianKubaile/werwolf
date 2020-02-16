@@ -26,7 +26,7 @@ Now you can run the bot:
 npm start
 ```
 
-The bot currently saves all the games in memory, meaning that if it restarts all the game stats will be lost. In the future there may be MongoDB support with permament saving of the game.
+The Bot can save the data in memory or use a databases backend. For more information, see the Storing the Data section. Important configuration can be changed in the config.js file.
 
 ## Storing the Data
 
@@ -34,4 +34,4 @@ The bot can store the data in a MongoDB databases aswell as store the data in me
 
 ## About language support
 
-The bot currently supports english and german messages.
+The bot currently supports english and german, which can be changed in the config.js file. Any translations are welcome, feel free to get in touch with me if you have any questions.
