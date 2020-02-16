@@ -2,12 +2,12 @@ const discord = require("discord.js");
 const commander = require("commander");
 const client = new discord.Client();
 
-const messages = require("./services/messages");
+const config = require("./config");
+const messages = require(`./services/${config.language}/messages.js`);
 const api_utils = require("./services/api_utils");
 const roleutils = require("./services/roleutils");
 const roles = require("./roles");
 const secrets = require("./secrets");
-const config = require("./config");
 const mongoose = require("mongoose");
 
 require("./services/mongodb/model");
@@ -79,21 +79,13 @@ client.on("message", async msg => {
             messages.no_game_present(msg);
             return
         }
-        let txt = `The host of the game is: \n ${game.game_master.name} \n The Following players are in the game right now:\n`;
-        for(let player of game.players){
-            txt += player.name + "\n";
-        }
-        msg.reply(txt);
+        messages.showPlayers(msg, game.game_master, game.players);
     }else if (program.showRoles){
         if(!game_present){
             messages.no_game_present(msg);
             return;
         }
-        let text = "Folgende Rollen sind momentan ausgewählt: \n"
-        for(let role of game.state.selected_roles){
-            text += role +  "\n"; 
-        }
-        msg.reply(text + "Mit einem --explain-role <name> könnt ihr die Beschreibung zu einer Rolle erfahren.");
+        messages.show_roles(msg, game.state.selected_roles);
     }else if(program.dealCards){
         if(!game_present){
             messages.no_game_present(msg);
@@ -101,20 +93,20 @@ client.on("message", async msg => {
         }
         game.state.used_roles = [];
         let s = game.settings;
-        if((s.villager + s.direwolf + s.roles - 1.0) > 10e-4){
+        if((s.villager + s.werewolf + s.roles - 1.0) > 10e-4){
             messages.chances_dont_add_up(msg);
             return;
         }
-        let villager = s.villager, direwolf = villager + s.direwolf;
+        let villager = s.villager, werewolf = villager + s.werweolf;
         for(let player of game.players){
             let random = Math.random();
             let player_msg = msg.client.users.get(player.id);
             if(random < villager){
                 //Give the player the role villager.
                 player.role = "Villager";
-            }else if(random < direwolf){
-                //Give the player the role direwolf
-                player.role = "Direwolf";
+            }else if(random < werewolf){
+                //Give the player the role werewolf
+                player.role = "Werewolf";
             }else{
                 //Give the player a  role
                 player.role = select_role(game.state.selected_roles, game.state.used_roles);
@@ -288,9 +280,9 @@ client.on("message", async msg => {
         if(from === "v"){
             from_arr = game.players.filter(player => player.role === "Villager");
         }else if(from === "d"){
-            from_arr = game.players.filter(player => player.role === "Direwolf");
+            from_arr = game.players.filter(player => player.role === "Werewolf");
         }else{
-            from_arr = game.players.filter(player => (player.role !== "Villager") && (player.role !== "Direwolf"));
+            from_arr = game.players.filter(player => (player.role !== "Villager") && (player.role !== "Werewolf"));
         }
         let idx = Math.floor(Math.random() * from_arr.length);
         let id = from_arr[idx].id;

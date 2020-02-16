@@ -15,7 +15,7 @@ module.exports.create_game = (msg) => {
         settings: {
             //Default settings
             //Spawn range (as a float percenetage)
-            direwolf: 0.3,
+            werewolf: 0.3,
             roles: 0.4,
             villager: 0.3
         },

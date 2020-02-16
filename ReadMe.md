@@ -31,3 +31,7 @@ The bot currently saves all the games in memory, meaning that if it restarts all
 ## Storing the Data
 
 The bot can store the data in a MongoDB databases aswell as store the data in memory. By default a MongoDB instance is used, as specified in the config.js. To use the in memory store, just remove the mongodb attribute in the config.js. Be aware though that if the bot restarts all data will be lost when in memory store is used.
+
+## About language support
+
+The bot currently supports english and german messages.

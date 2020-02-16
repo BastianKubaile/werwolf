@@ -26,7 +26,7 @@ module.exports.no_game_present = (msg) => {
 }
 
 module.exports.chances_dont_add_up = (msg) => {
-    msg.send("The probalities to become villager, direwolf or get a special role don't add up. You may change them with some(TODO) command.");
+    msg.send("The probalities to become villager, werewolf or get a special role don't add up. You may change them with some(TODO) command.");
 }
 
 module.exports.cant_send_message = (msg, player_name) => {
@@ -89,14 +89,14 @@ module.exports.role_not_found = (msg, role) => {
 }
 
 module.exports.invalid_expression = (msg, expression) => {
-    msg.reply(`The expression ${expression} is not valid. The correct form is <shorthand1>to<shorthand2>. Valid shorthands are v for Villager, d for Direwolf and r for Role.`)
+    msg.reply(`The expression ${expression} is not valid. The correct form is <shorthand1>to<shorthand2>. Valid shorthands are v for Villager, d for werewolf and r for Role.`)
 }
 
 module.exports.inform_player = (role, lookup_table) =>{
     if(role === "Villager"){
         return "You are a villager."
-    }else if(role === "Direwolf"){
-        return "You are a direwolf.";
+    }else if(role === "Werewolf"){
+        return "You are a werewolf.";
     }else{
         return `You are ${role}. \n ${lookup_table[role]}`;
     }
@@ -132,5 +132,5 @@ module.exports.commands_explainations = {
     removePlayer: "Removes the player with the name <name>. The same percularities as with addRole apply.",
     addPlayer: "Adds the player with the name <name> hinzu.The same percularities as with addRole apply.",
     explainRole: "Explains the role with the name <name>. The same percularities as with addRole apply.",
-    moveRole: "Changes the role of a random player, defined by <expression>. Every expression has the form <shorthand1>to<shorthand2>. The following shorthands are valid: d for direwolf, v for villager and r for role. I.e. dtow will turn a villager into a direwolf."
+    moveRole: "Changes the role of a random player, defined by <expression>. Every expression has the form <shorthand1>to<shorthand2>. The following shorthands are valid: d for werewolf, v for villager and r for role. I.e. dtow will turn a villager into a werewolf."
 }
