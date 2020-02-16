@@ -54,8 +54,8 @@ client.on("message", async msg => {
         .option("-r, --remove-role <name>", explains.removeRole, collect, [])
         .option("-k, --remove-player <name>", explains.removePlayer, collect, [])
         .option("-l, --add-player <name>", explains.addPlayer, collect, [])
-        .option("-e, --explain-role <name>", explains.explainRole, collect, []);
-
+        .option("-e, --explain-role <name>", explains.explainRole, collect, [])
+        .option("-m, --move-role <expression>", explains.moveRole);
     let split_args = text.split(" ");
 
     split_args.splice(0, 1);
@@ -93,12 +93,13 @@ client.on("message", async msg => {
         for(let role of game.state.selected_roles){
             text += role +  "\n"; 
         }
-        msg.reply(text + "Mit einem Kommando(?) könnt ihr die Beschreibung zu einer Rolle erfahren.");
+        msg.reply(text + "Mit einem --explain-role <name> könnt ihr die Beschreibung zu einer Rolle erfahren.");
     }else if(program.dealCards){
         if(!game_present){
             messages.no_game_present(msg);
             return;
         }
+        game.state.used_roles = [];
         let s = game.settings;
         if((s.villager + s.direwolf + s.roles - 1.0) > 10e-4){
             messages.chances_dont_add_up(msg);
@@ -108,24 +109,18 @@ client.on("message", async msg => {
         for(let player of game.players){
             let random = Math.random();
             let player_msg = msg.client.users.get(player.id);
-            let private_msg = "";
             if(random < villager){
                 //Give the player the role villager.
-                player.role = "Bürger";
-                private_msg = "Du bist Bürger.";
+                player.role = "Villager";
             }else if(random < direwolf){
                 //Give the player the role direwolf
-                player.role = "Werwolf";
-                private_msg = "Du bist Werwolf.";
+                player.role = "Direwolf";
             }else{
                 //Give the player a  role
-                let selected_roles = game.state.selected_roles;
-                do{
-                    player.role = selected_roles[Math.floor(Math.random() * selected_roles.length)];
-                }while(game.state.used_roles.indexOf(player.role) >= 0)
+                player.role = select_role(game.state.selected_roles, game.state.used_roles);
                 game.state.used_roles.push(player.role);
-                private_msg = `Du bist ${player.role}. ${roles.lookup_table[player.role]}`;
             }
+            let private_msg = messages.inform_player(player.role, roles.lookup_table);
             player_msg.send(private_msg).catch(async (err) => {
                 console.log(err);
                 if(err.message === "Cannot send messages to this user"){
@@ -133,6 +128,10 @@ client.on("message", async msg => {
                     let game_id = api_utils.get_game_id(msg);
                     let game = await api_utils.get_game(global.storage, game_id);
                     game.players = game.players.filter(curr_player => curr_player.id !== player.id);
+                    let role_idx = game.state.used_roles.indexOf(player.role);
+                    if(role_idx >= 0){
+                        game.state.used_roles = game.state.used_roles.splice(idx, 1); 
+                    }
                     api_utils.save_game(global.storage, game_id, game);
                     messages.cant_send_message(msg, player.name);
                 }
@@ -277,6 +276,46 @@ client.on("message", async msg => {
             txt += `${role}: \t ${roles.lookup_table[role]} \n`;
         }
         msg.reply(txt);
+    }else if(program.moveRole){
+        let match_regex = /^(v|d|r)to(v|d|r)$/g;
+        if(!match_regex.exec(program.moveRole)){
+            messages.invalid_expression(msg, program.moveRole);
+            return;
+        }
+
+        let from = program.moveRole.substring(0,1), to = program.moveRole.substring(3,4);
+        let from_arr = [];
+        if(from === "v"){
+            from_arr = game.players.filter(player => player.role === "Villager");
+        }else if(from === "d"){
+            from_arr = game.players.filter(player => player.role === "Direwolf");
+        }else{
+            from_arr = game.players.filter(player => (player.role !== "Villager") && (player.role !== "Direwolf"));
+        }
+        let idx = Math.floor(Math.random() * from_arr.length);
+        let id = from_arr[idx].id;
+        for(let i = 0; i < game.players.length; i++){
+            const player = game.players[i];
+            if(player.id === id){
+                //We have a match
+                if(from === "r"){
+                    //The role will be removed, so change this
+                    game.state.used_roles.splice(game.state.used_roles.indexOf(player.role), 1)
+                }
+                if(to === "v"){
+                    game.players[i].role = "Villager";
+                }else if(to === "d"){
+                    game.players[i].role = "Direwolf";
+                }else{
+                    game.players[i].role = select_role(game.state.selected_roles, game.state.used_roles);
+                    game.state.used_roles.push(game.players[i].role);
+                }
+                let player_msg = msg.client.users.get(game.players[i].id);
+                let private_msg = messages.inform_player(game.players[i].role, roles.lookup_table);
+                player_msg.send(private_msg);
+            }
+        }
+        api_utils.save_game(global.storage, game_id, game);
     }
     else{
     }
@@ -304,6 +343,14 @@ const iterate_role_args = (args, lookup_table) => {
         }
     }
     return [roles_found, current_role];
+}
+
+function select_role(selected_roles, used_roles) {
+    let role = "";
+    do {
+        role = selected_roles[Math.floor(Math.random() * selected_roles.length)];
+    } while (used_roles.indexOf(role) >= 0);
+    return role;
 }
 
 client.login(secrets.token);

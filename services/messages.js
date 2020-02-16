@@ -86,6 +86,20 @@ module.exports.role_not_found = (msg, role) => {
     msg.reply(`Konnte nicht die Rolle ${role} finden.`)
 }
 
+module.exports.invalid_expression = (msg, expression) => {
+    msg.reply(`Der Ausdruck ${expression} ist nicht valid. Die korrekte form ist <abk1>to<abk2>, wobei valide Abkürzungen v,d und r sind.`)
+}
+
+module.exports.inform_player = (role, lookup_table) =>{
+    if(role === "Villager"){
+        return "Du bist Bürger."
+    }else if(role === "Direwolf"){
+        return "Du bist Werwolf.";
+    }else{
+        return `Du bist${role}. \n ${lookup_table[role]}`;
+    }
+} 
+
 module.exports.commands_explainations = {
     createGame: "Erzeugt ein neues Spiel in diesem Channel auf diesem Server.",
     info: "Information über diesen Bot.",
@@ -99,5 +113,6 @@ module.exports.commands_explainations = {
     removeRole: "Löscht die mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
     removePlayer: "Löscht den Spieler mit dem Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
     addPlayer: "Fügt den Spieler mit dem Namen <name> hinzu. Die selben Besonderheiten wie bei addRole treten hier auf.",
-    explainRole: "Erklärt die Rolle mit den Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf."
+    explainRole: "Erklärt die Rolle mit den Name <name>. Die selben Besonderheiten wie bei addRole treten hier auf.",
+    moveRole: "Verschiebt eine Rolle, definiert bei der Ausdruck <expression>. Jeder Ausdruck hat folgende Form <abk1>to<abk2>, wobei folgende Abkürzungen erlaubt sind: d für werwolf, v für Dorfbewohner und r für Rolle. Z.B. macht dtow aus einem Werwolf einen Dorfbewohner."
 }
